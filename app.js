@@ -2,32 +2,22 @@ const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
-app.use(express.json())
 const {
-	models: { User },
+	models: { User, Note },
 } = require('./db')
+
+app.use(express.json())
+
 const path = require('path')
 
 app.use(morgan('tiny'))
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')))
 
-const requireToken = async (req, res, next) => {
-	try {
-		const token = req.headers.authorization
-		const user = await User.byToken(token)
-		req.user = user
-		next()
-	} catch (error) {
-		next(error)
-	}
-}
-
 app.post('/api/auth', async (req, res, next) => {
 	try {
-		const user = await User.authenticate(req.body)
-		if (!user) res.sendStatus(404)
+		const token = await User.authenticate(req.body)
+		if (!token) res.sendStatus(404)
 		// sign = encrypting token
-		const token = await jwt.sign({ id: user }, process.env.JWT)
 		res.send({ token })
 	} catch (ex) {
 		next(ex)
@@ -42,6 +32,19 @@ app.get('/api/auth', async (req, res, next) => {
 		res.send(req.user)
 	} catch (ex) {
 		next(ex)
+	}
+})
+
+app.get('/api/users/:id/notes', async (req, res, next) => {
+	try {
+		const userNotes = await Note.findAll({
+			where: {
+				userId: req.params.id,
+			},
+		})
+		res.send(userNotes)
+	} catch (error) {
+		next(error)
 	}
 })
 

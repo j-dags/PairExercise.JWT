@@ -19,13 +19,20 @@ const User = conn.define('user', {
 	password: STRING,
 })
 
+const Note = conn.define('note', {
+	text: STRING,
+})
+
+User.hasMany(Note)
+Note.belongsTo(User)
+
 User.byToken = async (token) => {
 	try {
 		console.log('INCOMING TOKEN ~~~>', token)
 		// verify = decrypt token
 		const payload = await jwt.verify(token, process.env.JWT)
-
 		const user = await User.findByPk(payload.id)
+
 		if (user) {
 			console.log('Deserialized Payload ~~~~>', payload)
 			return user
@@ -48,7 +55,9 @@ User.authenticate = async ({ username, password }) => {
 	})
 	const match = await bcrypt.compare(password, user.password)
 	if (match) {
-		return user.id
+		// return user.id
+		const token = await jwt.sign({ id: user.id }, process.env.JWT)
+		return token
 	}
 	const error = Error('bad credentials')
 	error.status = 401
@@ -69,6 +78,18 @@ const syncAndSeed = async () => {
 	const [lucy, moe, larry] = await Promise.all(
 		credentials.map((credential) => User.create(credential))
 	)
+
+	const notes = [
+		{ text: 'hello world' },
+		{ text: 'reminder to buy groceries' },
+		{ text: 'reminder to do laundry' },
+	]
+	const [note1, note2, note3] = await Promise.all(
+		notes.map((note) => Note.create(note))
+	)
+	await lucy.setNotes(note1)
+	await moe.setNotes([note2, note3])
+
 	return {
 		users: {
 			lucy,
@@ -82,5 +103,6 @@ module.exports = {
 	syncAndSeed,
 	models: {
 		User,
+		Note,
 	},
 }
