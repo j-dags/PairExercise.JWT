@@ -26,6 +26,7 @@ app.post('/api/auth', async (req, res, next) => {
 	try {
 		const user = await User.authenticate(req.body)
 		if (!user) res.sendStatus(404)
+		// sign = encrypting token
 		const token = await jwt.sign({ id: user }, process.env.JWT)
 		res.send({ token })
 	} catch (ex) {
@@ -35,7 +36,6 @@ app.post('/api/auth', async (req, res, next) => {
 
 app.get('/api/auth', async (req, res, next) => {
 	try {
-		// res.send(await User.byToken(req.headers.authorization))
 		const token = req.headers.authorization
 		const user = await User.byToken(token)
 		req.user = user

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken')
 const Sequelize = require('sequelize')
+const bcrypt = require('bcrypt')
 const { STRING } = Sequelize
 const config = {
 	logging: false,
@@ -21,7 +22,9 @@ const User = conn.define('user', {
 User.byToken = async (token) => {
 	try {
 		console.log('INCOMING TOKEN ~~~>', token)
+		// verify = decrypt token
 		const payload = await jwt.verify(token, process.env.JWT)
+
 		const user = await User.findByPk(payload.id)
 		if (user) {
 			console.log('Deserialized Payload ~~~~>', payload)
@@ -41,16 +44,20 @@ User.authenticate = async ({ username, password }) => {
 	const user = await User.findOne({
 		where: {
 			username,
-			// password,
 		},
 	})
-	if (user) {
+	const match = await bcrypt.compare(password, user.password)
+	if (match) {
 		return user.id
 	}
 	const error = Error('bad credentials')
 	error.status = 401
 	throw error
 }
+
+User.beforeCreate(async (user) => {
+	user.password = await bcrypt.hash(user.password, 3)
+})
 
 const syncAndSeed = async () => {
 	await conn.sync({ force: true })
