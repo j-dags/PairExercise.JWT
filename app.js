@@ -15,9 +15,9 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')))
 
 app.post('/api/auth', async (req, res, next) => {
 	try {
+		// if username/pw matches database, an (encrypted) token is created
 		const token = await User.authenticate(req.body)
 		if (!token) res.sendStatus(404)
-		// sign = encrypting token
 		res.send({ token })
 	} catch (ex) {
 		next(ex)

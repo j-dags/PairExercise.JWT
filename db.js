@@ -48,14 +48,17 @@ User.byToken = async (token) => {
 }
 
 User.authenticate = async ({ username, password }) => {
+	// username and password are passed into this method from post route
 	const user = await User.findOne({
 		where: {
 			username,
 		},
 	})
+
+	// bcrypt decrypts the password from the db and checks if the input password matches
 	const match = await bcrypt.compare(password, user.password)
 	if (match) {
-		// return user.id
+		// if they match, create an (encrypted) token which contains the users id
 		const token = await jwt.sign({ id: user.id }, process.env.JWT)
 		return token
 	}
